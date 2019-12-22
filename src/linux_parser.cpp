@@ -97,8 +97,37 @@ long LinuxParser::IdleJiffies() { return 0; }
 // TODO: Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() { return {}; }
 
-// TODO: Read and return the total number of processes
-int LinuxParser::TotalProcesses() { return 0; }
+// Read and return the total number of processes
+int LinuxParser::TotalProcesses() {
+  string line;
+  string key;
+  string value;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "processes") {
+          int int_value;
+          try
+            {
+            int_value = std::stoi(value);
+            }
+            catch (std::invalid_argument const &e)
+            {
+              throw std::invalid_argument( "std::stoi received invalid argument \n");
+            }
+            catch (std::out_of_range const &e)
+            {
+              throw std::invalid_argument( "Integer overflow: std::out_of_range thrown by std::stoi \n");
+            }
+          return int_value;
+        }
+      }
+    }
+  }
+  return -1;
+}
 
 // TODO: Read and return the number of running processes
 int LinuxParser::RunningProcesses() { return 0; }
