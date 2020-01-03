@@ -21,5 +21,5 @@ float Processor::Utilization() {
     return ((float)nonidle/(real_idle + nonidle));
 }
 
-// constructor defined outside the class
+// constructor defined outside the class definition in the header file
 Processor::Processor(std::vector<std::string> cpu_values): values_(cpu_values){};

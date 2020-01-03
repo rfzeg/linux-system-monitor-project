@@ -18,13 +18,15 @@ class System {
   std::string Kernel();               // TODO: See src/system.cpp
   std::string OperatingSystem();      // TODO: See src/system.cpp
   // constructor declaration
-  System(std::vector<std::string>);
+  System(std::vector<std::string>, std::vector<int>);
 
  private:
   std::vector<std::string> cpu_values_;
   Processor cpu_;
-  // TODO: Define any necessary private members
-  std::vector<Process> processes_ = {};
+  // Container composed of the system's processes id's
+  std::vector<int> pids_;
+  // Container composed of the system's processes
+  std::vector<Process> processes_;
 };
 
 #endif

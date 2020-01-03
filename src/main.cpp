@@ -3,6 +3,6 @@
 #include "linux_parser.h"
 
 int main() {
-  System system(LinuxParser::CpuUtilization());
+  System system(LinuxParser::CpuUtilization(), LinuxParser::Pids());
   NCursesDisplay::Display(system);
 }

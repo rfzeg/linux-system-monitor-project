@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "linux_parser.h"
+#include <unistd.h> // to convert from "clock ticks" to seconds
+#include <iomanip>  // std::setprecision
 
 using std::stof;
 using std::string;
@@ -91,7 +93,7 @@ float LinuxParser::MemoryUtilization() {
   return -1.0;
 }
 
-// Read and return the system uptime
+// Read and return the system uptime (values in seconds)
 long LinuxParser::UpTime() {
   string total, idle;
   string line;
@@ -195,22 +197,116 @@ int LinuxParser::RunningProcesses() {
   return -1;
 }
 
-// TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+// Read and return the command associated with a process
+// Linux stores the command used to launch the function in the /proc/[pid]/cmdline file
+string LinuxParser::Command(int pid) {
+  string line;
+  std::ifstream stream(kProcDirectory + std::to_string(pid) + kCmdlineFilename);
+  if (stream.is_open()) {
+    // Take a stream object from which to extract a line.
+    // 'line' is a std::string to which to extract the line into
+    std::getline(stream, line);
+    return line;
+  }
+  return string();
+}
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+// Read and return the memory used by a process
+// Linux stores memory utilization for the process in /proc/[pid]/status.
+string LinuxParser::Ram(int pid) {
+  string line, key, value;
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "VmSize:") {
+          std::stringstream mem_string;
+          float mem_float = std::stof(value)/1000;
+          mem_string << std::setfill(' ') << std::setw(6) << std::fixed << std::setprecision(1) << mem_float;
+          return mem_string.str();
+          }
+      }
+    }
+  }
+  return string();
+}
+
+// Read and return the user associated with a process
+// The UID for a process is stored in /proc/[PID]/status
+// To-Do: match the UID to a username
+string LinuxParser::User(int pid) {
+  string line, key, value;
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "Uid:") { return value; }
+      }
+    }
+  }
+  return string();
+}
+
+// Read and return the uptime of a process
+// Linux stores the process up time in /proc/[pid]/stat
+long LinuxParser::UpTime(int pid) {
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatFilename);
+  string line, value;
+  if (filestream.is_open()) {
+    int counter = 0;
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      // read tokens one by one
+      while (linestream >> value) {
+        counter++;
+        if (counter == 22) {
+          // convert from "clock ticks" to seconds
+          return std::stol(value)/sysconf(_SC_CLK_TCK);
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+// Read and return CPU utilization (per pid) in percentage
+float LinuxParser::CpuUtilization(int pid) {
+  string line, value;
+  long int total_time, seconds, utime, stime, cutime, cstime, starttime;
+  float cpu_usage;
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatFilename);
+  if (filestream.is_open()) {
+    int counter = 0;
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      // read tokens one by one
+      while (linestream >> value) {
+        ++counter;
+        switch(counter) {
+          // Amount of time scheduled in user mode (in clock ticks)
+          case 14: utime = std::stol(value); break;
+          // Amount of time scheduled in kernel mode (in clock ticks)
+          case 15: stime = std::stol(value); break;
+          // Amount of time waiting-for children in user mode (in clock ticks)
+          case 16: cutime = std::stol(value); break;
+          // Amount of time waiting-for children in kernel mode (in clock ticks)
+          case 17: cstime = std::stol(value); break;
+          // The time the process started after system boot (in clock ticks)
+          case 22: starttime = std::stol(value); break;
+        }
+      }
+    }
+    total_time = utime + stime + cutime + cstime;
+    // Total elapsed time in seconds since the process started
+    seconds = LinuxParser::UpTime() - (starttime / sysconf(_SC_CLK_TCK));
+    cpu_usage = ((total_time / sysconf(_SC_CLK_TCK)) / (float)seconds);
+    return cpu_usage;
+  }
+  return 0.0;
+}
 
 // TODO: Read and return the user ID associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
-
-// TODO: Read and return the user associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
-
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
