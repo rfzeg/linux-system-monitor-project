@@ -32,6 +32,5 @@ long int Process::UpTime() { return uptime_; }
 // Return this process's CPU utilization
 float Process::CpuUtilization() { return cpu_load_; }
 
-// TODO: Overload the "less than" comparison operator for Process objects
-// REMOVE: [[maybe_unused]] once you define the function
-bool Process::operator<(Process const& a[[maybe_unused]]) const { return true; }
+// Overload of "less than" comparison operator for Process objects
+bool Process::operator<(Process const& a) const { return a.cpu_load_ < cpu_load_; }
