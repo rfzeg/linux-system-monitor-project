@@ -18,7 +18,7 @@ class System {
   std::string Kernel();               // TODO: See src/system.cpp
   std::string OperatingSystem();      // TODO: See src/system.cpp
   // constructor declaration
-  System(std::vector<std::string>, std::vector<int>);
+  System(std::vector<std::string>);
 
  private:
   std::vector<std::string> cpu_values_;

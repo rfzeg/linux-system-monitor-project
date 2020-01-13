@@ -15,27 +15,34 @@ using std::string;
 using std::vector;
 
 // constructor defined outside the class definition in the header file
-System::System(std::vector<std::string> cpu_values, std::vector<int> pids): cpu_(cpu_values){
+System::System(std::vector<std::string> cpu_values): cpu_(cpu_values){};
+
+// Return a container composed of the system's processes
+std::vector<Process>& System::Processes(){
+  std::vector<int> pids = LinuxParser::Pids();
+  // clear vector in preparation for a new refresh cycle
+  processes_.clear();
   for (int elem : pids) {
     std::string cmdline = LinuxParser::Command(elem);
     std::string vmsize = LinuxParser::Ram(elem);
     std::string user = LinuxParser::User(elem);
     long int uptime = LinuxParser::UpTime(elem);
     float cpu_load = LinuxParser::CpuUtilization(elem);
+    // initialize 'Process' object
     Process process_(elem, cmdline, vmsize, user, uptime, cpu_load);
     // Push back 'Process' objects separately into a vector
     processes_.push_back(process_);
   }
-};
+  // sort using the default operator '<'
+  std::sort(processes_.begin(), processes_.end());
+  return processes_;
+}
 
 // Return an 'Processor' object containing the system's CPU utilization
 Processor& System::Cpu() {
   // Get 'Processor' object
   return cpu_;
   }
-
-// Return a container composed of the system's processes
-vector<Process>& System::Processes() { return processes_; }
 
 // TODO: Return the system's kernel identifier (string)
 std::string System::Kernel() {
