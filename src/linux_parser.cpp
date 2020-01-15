@@ -234,17 +234,34 @@ string LinuxParser::Ram(int pid) {
 
 // Read and return the user associated with a process
 // The UID for a process is stored in /proc/[PID]/status
-// To-Do: match the UID to a username
+// Match the UID to a username obtained from /etc/passwd
 string LinuxParser::User(int pid) {
-  string line, key, value;
+  string line, key, uid_value, x, iter_val;
   std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
   if (filestream.is_open()) {
     while (std::getline(filestream, line)) {
       std::istringstream linestream(line);
-      while (linestream >> key >> value) {
-        if (key == "Uid:") { return value; }
+      while (linestream >> key >> uid_value) {
+        if (key == "Uid:") { break; }
       }
+    break;
     }
+  }
+  filestream.close();
+
+  std::ifstream stream(kPasswordPath);
+  if (stream.is_open()) {
+    while (std::getline(stream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
+      std::istringstream stream(line);
+      stream >> key >> x >> iter_val;
+      if (iter_val == uid_value) {
+        // std::replace(line.begin(), line.end(), ' ', ':');
+        break;
+        }
+    }
+    stream.close();
+    return key;
   }
   return string();
 }
